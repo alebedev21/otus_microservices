@@ -11,7 +11,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddOptions<ApiPointsOptions>().BindConfiguration("ApiPointsOptions");
 
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IAuthService, AuthService>();
 
 var app = builder.Build();
 

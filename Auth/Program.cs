@@ -12,8 +12,8 @@ builder.WebHost.ConfigureKestrel(options => { options.ListenAnyIP(5086); });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IAuthService, AuthService>();
-builder.Services.AddSingleton<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 builder.Services.AddOptions<PrivateKeyOptions>().BindConfiguration("PrivateKeyOptions");
 builder.Services.AddSingleton<IPrivateKeyRepository, PrivateKeyRepository>();

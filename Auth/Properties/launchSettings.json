@@ -3,6 +3,7 @@
     "http": {
       "commandName": "Project",
       "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
         "DB_AUTH_USER": "postgres",
         "DB_AUTH_PASSWORD": "123456"
       },
