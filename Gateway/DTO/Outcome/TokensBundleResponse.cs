@@ -1,4 +1,4 @@
-namespace Auth.DTO.Outcome;
+namespace Gateway.DTO.Outcome;
 
 public class TokensBundleResponse
 {
