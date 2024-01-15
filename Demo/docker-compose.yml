@@ -28,6 +28,24 @@ services:
     networks:
       - demoapp-network
 
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.11.1
+    command: --log.level=debug
+    environment:
+      DATA_SOURCE_URI: "postgres:5432/grafana?sslmode=disable"
+      DATA_SOURCE_USER: grafana
+      DATA_SOURCE_PASS: e366311e-828a-4433-862e-0cc20bcf197c
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
+    volumes:
+      - ./queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    ports:
+      - '9187:9187'
+    networks:
+      - demoapp-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
   prometheus:
     image: bitnami/prometheus:2.48.0-debian-11-r0
     container_name: prometheus
@@ -46,29 +64,32 @@ services:
     container_name: grafana
     ports:
       - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
       - ./volumes/grafana_data:/var/lib/grafana
     networks:
       - demoapp-network
     restart: unless-stopped
 
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0     
-    container_name: cadvisor
-    ports:
-      - 8080:8080
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    devices:
-      - /dev/kmsg
-    privileged: true
-    networks:
-      - demoapp-network
-    restart: unless-stopped
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:v0.47.0     
+  #   container_name: cadvisor
+  #   ports:
+  #     - 8080:8080
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - /dev/disk/:/dev/disk:ro
+  #   devices:
+  #     - /dev/kmsg
+  #   privileged: true
+  #   networks:
+  #     - demoapp-network
+  #   restart: unless-stopped
 
   # node_exporter:
   #   image: quay.io/prometheus/node-exporter:v1.5.0
