@@ -13,21 +13,20 @@ namespace Gateway.Services
     {
         private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
         private readonly string _authServiceUrl = options.Value.AuthUrl!;
+        private readonly JsonSerializerOptions JsonSerializerOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { new JsonStringEnumConverter() },
+        };
 
         public async Task RegisterUser(RegistrationRequest request)
         {
             using var client = _httpClientFactory.CreateClient();
             client.BaseAddress = new Uri(_authServiceUrl);
 
-            JsonSerializerOptions jsonSerializerOptions = new()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                Converters = { new JsonStringEnumConverter() },
-            };
-
             using var response = await client.PostAsync(
                     "/register",
-                    JsonContent.Create(request, new MediaTypeHeaderValue("application/json"), jsonSerializerOptions));
+                    JsonContent.Create(request, new MediaTypeHeaderValue("application/json"), JsonSerializerOptions));
 
             switch (response.StatusCode)
             {
@@ -44,13 +43,28 @@ namespace Gateway.Services
 
         public async Task<TokensBundleResponse> LoginUser(RegistrationRequest request)
         {
-            await Task.CompletedTask;
+            using var client = _httpClientFactory.CreateClient();
+            client.BaseAddress = new Uri(_authServiceUrl);
 
-            return new TokensBundleResponse
+            using var response = await client.PostAsync(
+                    "/login",
+                    JsonContent.Create(request, new MediaTypeHeaderValue("application/json"), JsonSerializerOptions));
+
+            switch (response.StatusCode)
             {
-                AccessToken = "",
-                RefreshToken = "",
-            };
+                case HttpStatusCode.OK:
+                    var responseContent = JsonSerializer.Deserialize<TokensBundleResponse>(await response.Content.ReadAsStringAsync(), JsonSerializerOptions);
+                    return responseContent!;
+
+                case HttpStatusCode.Unauthorized:
+                    throw new UnauthorizedAccessException();
+
+                case HttpStatusCode.NotFound:
+                    throw new KeyNotFoundException();
+
+                default:
+                    throw new Exception($"Received unexpected response status code '{response.StatusCode}'");
+            }
         }
     }
 }

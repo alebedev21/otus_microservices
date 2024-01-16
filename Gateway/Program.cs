@@ -34,6 +34,23 @@ app.MapPost("/register", async ([Required] RegistrationRequest? request, IAuthSe
     }
 });
 
+app.MapPost("/login", async ([Required] RegistrationRequest? request, IAuthService service) =>
+{
+    try
+    {
+        var tokens = await service.LoginUser(request!);
+        return Results.Ok(tokens);
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Unauthorized();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
 app.MapPost("/user", async (UserAddRequest request, IUserService service) =>
 {
     var response = await service.Add(request);

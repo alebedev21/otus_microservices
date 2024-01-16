@@ -3,7 +3,6 @@ using Auth.DTO.Outcome;
 using Auth.Helpers;
 using Auth.Repositories;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace Auth.Services
 {
