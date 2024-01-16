@@ -1,15 +1,29 @@
 using Auth.ConfigOptions;
 using Auth.Contexts;
 using Auth.DTO.Income;
+using Auth.Helpers;
 using Auth.Repositories;
 using Auth.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc(
+    AssemblyInfo.AssemblyName,
+    new OpenApiInfo
+    {
+        Title = $"{AssemblyInfo.ProgramNameVersion} manual",
+    });
+
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{AssemblyInfo.AssemblyName}.xml"), true);
+
+    options.SupportNonNullableReferenceTypes();
+});
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();

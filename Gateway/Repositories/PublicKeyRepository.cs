@@ -1,3 +1,5 @@
+using Gateway.ConfigOptions;
+using Gateway.Enums;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,13 +19,9 @@ public class PublicKeyRepository : IPublicKeyRepository
 
     public RsaSecurityKey PublicKey { get; }
 
-    public PublicKeyRepository(IOptions<PublicKeyRepositoryOptions> options, ILogger<PublicKeyRepository> logger)
+    public PublicKeyRepository(IOptions<PublicKeyOptions> options, ILogger<PublicKeyRepository> logger)
     {
-        string publicKeyPemData;
-        using (var reader = new StreamReader(options.Value.PublicKeyPemFilePath!))
-        {
-            publicKeyPemData = reader.ReadToEnd();
-        }
+        string publicKeyPemData = options.Value.PublicKey!;
 
         byte[] publicKey;
         if (TryReadBinaryKey(publicKeyPemData, Pkcs1PublicKeyPemHeader, Pkcs1PublicKeyPemFooter, out var b))

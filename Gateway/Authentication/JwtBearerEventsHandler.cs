@@ -1,3 +1,4 @@
+using Gateway.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Gateway.Authentication;
@@ -40,6 +41,7 @@ public class JwtBearerEventsHandler : JwtBearerEvents
     public override async Task Challenge(JwtBearerChallengeContext context)
     {
         context.HandleResponse();
+        await Responses.Response401Unauthorized(context.HttpContext);
         await base.Challenge(context);
     }
 }

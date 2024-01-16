@@ -49,7 +49,7 @@ namespace Auth.Services
             {
                 { JwtRegisteredClaimNames.Jti, RandomString.NewMark(8) },
                 { JwtRegisteredClaimNames.Sub, userId.ToString() },
-                { JwtRegisteredClaimNames.Aud, "otus_microservices_auth" },
+                { JwtRegisteredClaimNames.Aud, "otus_microservices_aud" },
             };
         }
     }
