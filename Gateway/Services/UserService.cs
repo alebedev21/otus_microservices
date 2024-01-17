@@ -42,6 +42,11 @@ public class UserService(IHttpClientFactory httpClientFactory, IOptions<ApiPoint
             "/user",
             JsonContent.Create(request, new MediaTypeHeaderValue("application/json")));
 
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
         response.EnsureSuccessStatusCode();
     }
 }
