@@ -146,7 +146,7 @@ app.MapPut("/user", [Authorize] async (HttpContext context, UserUpdateRequest re
     }
 });
 
-app.MapGet("/user", async (HttpContext context, IUserService service) =>
+app.MapGet("/user", [Authorize] async (HttpContext context, IUserService service) =>
 {
     var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
     Guid userId = new Guid(id);
