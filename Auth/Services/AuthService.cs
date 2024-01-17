@@ -47,8 +47,7 @@ namespace Auth.Services
         {
             return new JwtPayload
             {
-                { JwtRegisteredClaimNames.Jti, RandomString.NewMark(8) },
-                { JwtRegisteredClaimNames.Sub, userId.ToString() },
+                { JwtRegisteredClaimNames.NameId, userId.ToString() },
                 { JwtRegisteredClaimNames.Aud, "otus_microservices_aud" },
             };
         }

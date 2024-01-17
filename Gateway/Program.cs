@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => { options.ListenAnyIP(5168); });
@@ -73,7 +74,7 @@ builder.Services.AddAuthentication().AddJwtBearer(o =>
         ValidateIssuerSigningKey = true,
         ValidateAudience = true,
         ValidateIssuer = false,
-        ValidateLifetime = true,
+        ValidateLifetime = false,
         ValidAudience = "otus_microservices_aud",
         ClockSkew = TimeSpan.Zero,
     };
@@ -127,11 +128,14 @@ app.MapPost("/login", async ([Required] RegistrationRequest? request, IAuthServi
     }
 });
 
-app.MapPost("/user", async (UserAddRequest request, IUserService service) =>
+app.MapPost("/user", [Authorize] async (HttpContext context, UserAddRequest request, IUserService service) =>
 {
+    var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
+    Guid userId = new Guid(id);
+
     var response = await service.Add(request);
 
     return Results.Created();
-}).RequireAuthorization();
+});
 
 app.Run();

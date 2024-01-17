@@ -6,13 +6,17 @@ using System.Net.Http.Headers;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Net;
+using System.Net.Http;
 
 namespace Gateway.Services
 {
     public class AuthService(IHttpClientFactory httpClientFactory, IOptions<ApiPointsOptions> options) : IAuthService
     {
         private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+        
         private readonly string _authServiceUrl = options.Value.AuthUrl!;
+        private readonly string _demoServiceUrl = options.Value.DemoUrl!;
+        
         private readonly JsonSerializerOptions JsonSerializerOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -21,23 +25,45 @@ namespace Gateway.Services
 
         public async Task RegisterUser(RegistrationRequest request)
         {
-            using var client = _httpClientFactory.CreateClient();
-            client.BaseAddress = new Uri(_authServiceUrl);
+            using var authClient = _httpClientFactory.CreateClient();
+            authClient.BaseAddress = new Uri(_authServiceUrl);
 
-            using var response = await client.PostAsync(
+            using var response = await authClient.PostAsync(
                     "/register",
                     JsonContent.Create(request, new MediaTypeHeaderValue("application/json"), JsonSerializerOptions));
 
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
-                    return;
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    var userResponse = JsonSerializer.Deserialize<RegisterResponse>(stream, JsonSerializerOptions);
+                    await CreateUser(userResponse!.UserId!.Value);
+
+                    break;
 
                 case HttpStatusCode.Conflict:
                     throw new ArgumentOutOfRangeException();
 
                 default:
                     throw new Exception($"Received unexpected response status code '{response.StatusCode}'");
+            }
+
+            async Task CreateUser(Guid userId)
+            {
+                using var demoClient = _httpClientFactory.CreateClient();
+                demoClient.BaseAddress = new Uri(_demoServiceUrl);
+
+                UserAddRequest request = new(userId, null, null, null, null, null);
+                string requestId = Guid.NewGuid().ToString();
+
+                HttpRequestMessage requestMessage = new(HttpMethod.Post, "/user")
+                {
+                    Content = JsonContent.Create(request, new MediaTypeHeaderValue("application/json"))
+                };
+                requestMessage.Headers.Add("X-Request-Id", requestId);
+
+                var response = await demoClient.SendAsync(requestMessage);
+                response.EnsureSuccessStatusCode();
             }
         }
 
