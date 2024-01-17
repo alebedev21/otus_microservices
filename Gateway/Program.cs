@@ -128,14 +128,15 @@ app.MapPost("/login", async ([Required] RegistrationRequest? request, IAuthServi
     }
 });
 
-app.MapPost("/user", [Authorize] async (HttpContext context, UserAddRequest request, IUserService service) =>
+app.MapPut("/user", [Authorize] async (HttpContext context, UserUpdateRequest request, IUserService service) =>
 {
     var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
     Guid userId = new Guid(id);
 
-    var response = await service.Add(request);
+    UserDemoUpdateRequest demoUpdateRequest = request.ToDemoUpdateRequest(userId);
+    await service.Update(demoUpdateRequest);
 
-    return Results.Created();
+    return Results.Ok();
 });
 
 app.Run();
