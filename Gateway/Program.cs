@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => { options.ListenAnyIP(5168); });
@@ -71,7 +70,7 @@ builder.Services.AddAuthentication().AddJwtBearer(o =>
     o.IncludeErrorDetails = true;
     o.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuerSigningKey = true,
+        ValidateIssuerSigningKey = false,
         ValidateAudience = true,
         ValidateIssuer = false,
         ValidateLifetime = false,
@@ -128,7 +127,7 @@ app.MapPost("/login", async ([Required] RegistrationRequest? request, IAuthServi
     }
 });
 
-app.MapPut("/user", [Authorize] async (HttpContext context, UserUpdateRequest request, IUserService service) =>
+app.MapPut("/user", async (HttpContext context, UserUpdateRequest request, IUserService service) =>
 {
     try
     {
@@ -146,13 +145,15 @@ app.MapPut("/user", [Authorize] async (HttpContext context, UserUpdateRequest re
     }
 });
 
-app.MapGet("/user", [Authorize] async (HttpContext context, IUserService service) =>
+app.MapGet("/user", async (HttpContext context, IUserService service) =>
 {
+    var claims = context.User.Claims.ToList();
+
     var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
     Guid userId = new Guid(id);
 
     var response = await service.Get(userId);
     return Results.Ok(response);
-});
+}).RequireAuthorization();
 
 app.Run();

@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options => { options.ListenAnyIP(5068); });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -45,7 +46,11 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint($"./{AssemblyInfo.AssemblyName}/swagger.json", AssemblyInfo.AssemblyName);
+    options.DocumentTitle = $"{AssemblyInfo.ProgramNameVersion} manual";
+});
 app.UseDeveloperExceptionPage();
 
 app.MapPost("/register", async ([Required]RegistrationRequest? request, IAuthService service) =>

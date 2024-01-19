@@ -19,7 +19,7 @@ public class PublicKeyRepository : IPublicKeyRepository
 
     public RsaSecurityKey PublicKey { get; }
 
-    public PublicKeyRepository(IOptions<PublicKeyOptions> options, ILogger<PublicKeyRepository> logger)
+    public PublicKeyRepository(IOptions<PublicKeyOptions> options)
     {
         string publicKeyPemData = options.Value.PublicKey!;
 
@@ -55,14 +55,6 @@ public class PublicKeyRepository : IPublicKeyRepository
         {
             throw new FormatException("Zero bytes imported from public key storage");
         }
-
-        // TODO: Do we need logger here?
-        logger.LogDebug("RSA public key bytes read: {BytesRead}", bytesRead);
-
-        PublicKey = new RsaSecurityKey(rsaPublic);
-
-        // TODO: Do we need logger here?
-        logger.LogDebug("RSA public key size: {KeySize} bits", PublicKey.KeySize);
     }
 
     // TODO: Move to exernal class

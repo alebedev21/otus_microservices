@@ -55,7 +55,11 @@ builder.Services.AddOpenTelemetry()
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint($"./{AssemblyInfo.AssemblyName}/swagger.json", AssemblyInfo.AssemblyName);
+    options.DocumentTitle = $"{AssemblyInfo.ProgramNameVersion} manual";
+});
 app.UseDeveloperExceptionPage();
 
 app.MapPrometheusScrapingEndpoint();
