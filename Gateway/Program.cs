@@ -5,6 +5,7 @@ using Gateway.Helpers;
 using Gateway.Repositories;
 using Gateway.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -65,7 +66,12 @@ builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IPostConfigureOptions<JwtBearerOptions>, TokenValidatorPostConfigure>();
 builder.Services.AddScoped<JwtBearerEventsHandler>();
 
-builder.Services.AddAuthentication().AddJwtBearer(o =>
+builder.Services.AddAuthentication(o =>
+{
+    o.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(o =>
 {
     o.IncludeErrorDetails = true;
     o.TokenValidationParameters = new TokenValidationParameters
@@ -97,7 +103,7 @@ app.UseDeveloperExceptionPage();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapPost("/register", async ([Required] RegistrationRequest? request, IAuthService service) =>
+app.MapPost("/register", [AllowAnonymous] async ([Required] RegistrationRequest? request, IAuthService service) =>
 {
     try
     {
@@ -110,7 +116,7 @@ app.MapPost("/register", async ([Required] RegistrationRequest? request, IAuthSe
     }
 });
 
-app.MapPost("/login", async ([Required] RegistrationRequest? request, IAuthService service) =>
+app.MapPost("/login", [AllowAnonymous] async ([Required] RegistrationRequest? request, IAuthService service) =>
 {
     try
     {
@@ -127,7 +133,7 @@ app.MapPost("/login", async ([Required] RegistrationRequest? request, IAuthServi
     }
 });
 
-app.MapPut("/user", async (HttpContext context, UserUpdateRequest request, IUserService service) =>
+app.MapPut("/user", [Authorize] async (HttpContext context, UserUpdateRequest request, IUserService service) =>
 {
     try
     {
@@ -145,7 +151,7 @@ app.MapPut("/user", async (HttpContext context, UserUpdateRequest request, IUser
     }
 });
 
-app.MapGet("/user", async (HttpContext context, IUserService service) =>
+app.MapGet("/user", [Authorize] async (HttpContext context, IUserService service) =>
 {
     var claims = context.User.Claims.ToList();
 
@@ -154,6 +160,6 @@ app.MapGet("/user", async (HttpContext context, IUserService service) =>
 
     var response = await service.Get(userId);
     return Results.Ok(response);
-}).RequireAuthorization();
+});
 
 app.Run();

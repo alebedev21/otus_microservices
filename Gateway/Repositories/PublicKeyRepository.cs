@@ -9,12 +9,6 @@ public class PublicKeyRepository : IPublicKeyRepository
 {
     private delegate void ImportKey(ReadOnlySpan<byte> key, out int bytesRead);
 
-    private const string Pkcs1PublicKeyPemHeader = "-----BEGIN RSA PUBLIC KEY-----";
-    private const string Pkcs1PublicKeyPemFooter = "-----END RSA PUBLIC KEY-----";
-
-    private const string X509PublicKeyPemHeader = "-----BEGIN PUBLIC KEY-----";
-    private const string X509PublicKeyPemFooter = "-----END PUBLIC KEY-----";
-
     private KeyFormats PublicKeyFormat { get; }
 
     public RsaSecurityKey PublicKey { get; }
@@ -24,14 +18,9 @@ public class PublicKeyRepository : IPublicKeyRepository
         string publicKeyPemData = options.Value.PublicKey!;
 
         byte[] publicKey;
-        if (TryReadBinaryKey(publicKeyPemData, Pkcs1PublicKeyPemHeader, Pkcs1PublicKeyPemFooter, out var b))
+        if (TryReadBinaryKey(publicKeyPemData, "-----BEGIN RSA PUBLIC KEY-----", "-----END RSA PUBLIC KEY-----", out var b))
         {
             PublicKeyFormat = KeyFormats.Pkcs1;
-            publicKey = b;
-        }
-        else if (TryReadBinaryKey(publicKeyPemData, X509PublicKeyPemHeader, X509PublicKeyPemFooter, out b))
-        {
-            PublicKeyFormat = KeyFormats.X509;
             publicKey = b;
         }
         else
@@ -55,6 +44,8 @@ public class PublicKeyRepository : IPublicKeyRepository
         {
             throw new FormatException("Zero bytes imported from public key storage");
         }
+
+        PublicKey = new RsaSecurityKey(rsaPublic);
     }
 
     // TODO: Move to exernal class
