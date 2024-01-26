@@ -35,6 +35,9 @@ services:
   gateway:
     container_name: 'gateway'
     image: 'freel210/gateway'
+    environment:
+      ApiPointsOptions__AuthUrl: "http://auth:5068"
+      ApiPointsOptions__DemoUrl: "http://web:8000"
     build:
       context: ./Gateway
       dockerfile: Dockerfile
