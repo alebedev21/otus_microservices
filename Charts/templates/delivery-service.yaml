@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-service
+  name: delivery-service
 spec:
   selector:
-    app: demo
+    app: delivery
   ports:
     - protocol: TCP
-      port: 8000
-      targetPort: 8000
+      port: 5073
+      targetPort: 5073
   type: LoadBalancer

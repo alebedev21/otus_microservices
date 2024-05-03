@@ -17,28 +17,24 @@ spec:
       labels:
         app: demo
     spec:
-      volumes:
-      - name: appsettings-volume
-        configMap:
-          name: cm
       containers:
       - name: demo
-        image: {{ .Values.container.image }}
-        volumeMounts:
-        - name: appsettings-volume
-          mountPath: /app/appsettings.json
-          subPath: appsettings.json
+        image: {{ .Values.container.demoImage }}
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
+        - name: PostgresOptions__Host
+          value: pg-minikube-postgresql.default.svc.cluster.local
+        - name: PostgresOptions__Database
+          value: usersdb4
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: secret
+              name: demo-secret
               key: dbUser
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: secret
+              name: demo-secret
               key: dbPassword

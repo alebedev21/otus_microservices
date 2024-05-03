@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: kuber-ingress-2
+  name: kuber-ingress
 spec:
   ingressClassName: nginx
   rules:
@@ -14,25 +14,25 @@ spec:
             service:
               name: demo-service
               port:
-                number: 8000
+                number: 8080
         - path: /swagger
           pathType: Prefix
           backend:
             service:
-              name: demo-service
+              name: gateway-service
               port:
-                number: 8000
+                number: 5168
         - path: /user
           pathType: Prefix
           backend:
             service:
               name: demo-service
               port:
-                number: 8000
+                number: 8080
         - path: /users
           pathType: Prefix
           backend:
             service:
               name: demo-service
               port:
-                number: 8000
+                number: 8080

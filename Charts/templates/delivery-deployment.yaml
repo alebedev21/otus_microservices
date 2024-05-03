@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delivery-deployment
+  labels:
+    app: delivery-deployment
+spec:
+  replicas: {{ .Values.replicaCount }}
+  minReadySeconds: 10
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: delivery
+  template:
+    metadata:
+      labels:
+        app: delivery
+    spec:
+      containers:
+      - name: delivery
+        image: {{ .Values.container.deliveryImage }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5073
+        env:
+        - name: PostgresOptions__Host
+          value: pg-minikube-postgresql.default.svc.cluster.local
+        - name: PostgresOptions__Database
+          value: deliverydb10
+        - name: DB_DELIVERY_USER
+          valueFrom:
+            secretKeyRef:
+              name: demo-secret
+              key: dbUser
+        - name: DB_DELIVERY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: demo-secret
+              key: dbPassword
