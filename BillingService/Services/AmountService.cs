@@ -7,21 +7,23 @@ namespace BillingService.Services
 {
     public class AmountService : IAmountService
     {
-        private readonly BillingDbContext _context;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<AmountService> _logger;
 
-        public AmountService(BillingDbContext context, ILogger<AmountService> logger)
+        public AmountService(ILogger<AmountService> logger, IServiceScopeFactory scopeFactory)
         {
-            _context = context;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<bool> CreateAccount(Guid userId)
         {
-            using var transaction = _context.Database.BeginTransaction();
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
             try
             {
-                var amount = await _context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
+                var amount = await context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
 
                 if (amount == null)
                 {
@@ -31,104 +33,87 @@ namespace BillingService.Services
                         Total = 0,
                     };
 
-                    await _context.Amounts.AddAsync(newAmount);
-                    await _context.SaveChangesAsync();
+                    await context.Amounts.AddAsync(newAmount);
+                    await context.SaveChangesAsync();
 
-                    await transaction.CommitAsync();
                     return true;
                 }
 
-                await transaction.CommitAsync();
                 return false;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Put money error");
-
-                await transaction.RollbackAsync();
                 return false;
             }
         }
 
         public async Task<bool> PutMoney(Guid userId, decimal some)
         {
-            using var transaction = _context.Database.BeginTransaction();
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
             try
             {
-                var amount = await _context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
+                var amount = await context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
 
                 if (amount == null)
                 {
-                    await transaction.CommitAsync();
                     return false;
                 }
 
                 amount.Total += some;
-                _context.Amounts.Update(amount);
-                await _context.SaveChangesAsync();
+                context.Amounts.Update(amount);
+                await context.SaveChangesAsync();
 
-                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Put money error");
-
-                await transaction.RollbackAsync();
                 return false;
             }
         }
 
         public async Task<bool> WriteoutMoney(Guid userId, decimal some)
         {
-            using var transaction = _context.Database.BeginTransaction();
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
             try
             {
-                var amount = await _context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
+                var amount = await context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
 
                 if (amount == null || amount.Total < some)
                 {
-                    await transaction.CommitAsync();
                     return false;
                 }
 
                 amount.Total -= some;
-                _context.Amounts.Update(amount);
-                await _context.SaveChangesAsync();
+                context.Amounts.Update(amount);
+                await context.SaveChangesAsync();
 
-                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Write out money error");
-                
-                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Write out money error");              
                 return false;
             }
         }
 
         public async Task<decimal> GetUserAmount(Guid userId)
         {
-            using var transaction = _context.Database.BeginTransaction();
-           
-            try
-            {
-                var amount = await _context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
-                if (amount == null)
-                {
-                    await transaction.CommitAsync();
-                    return 0;
-                }
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
-                await transaction.CommitAsync();
-                return amount.Total;
-            }
-            catch (Exception)
+            var amount = await context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
+            if (amount == null)
             {
-                await transaction.RollbackAsync();
-                throw;
+                return 0;
             }
+
+            return amount.Total;
         }
     }
 }
