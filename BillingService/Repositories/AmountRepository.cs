@@ -1,16 +1,15 @@
-﻿
-using BillingService.Contexts;
+﻿using BillingService.Contexts;
 using BillingService.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace BillingService.Services
+namespace BillingService.Repositories
 {
-    public class AmountService : IAmountService
+    public class AmountRepository : IAmountRepository
     {
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<AmountService> _logger;
+        private readonly ILogger<AmountRepository> _logger;
 
-        public AmountService(ILogger<AmountService> logger, IServiceScopeFactory scopeFactory)
+        public AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _scopeFactory = scopeFactory;
@@ -97,7 +96,7 @@ namespace BillingService.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Write out money error");              
+                _logger.LogError(ex, "Write out money error");
                 return false;
             }
         }
