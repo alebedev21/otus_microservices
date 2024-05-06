@@ -3,8 +3,8 @@ using Microsoft.OpenApi.Models;
 using StorageService.ConfigOptions;
 using StorageService.Contexts;
 using StorageService.DTO.Income;
-using StorageService.Entities;
 using StorageService.Helpers;
+using StorageService.Repositoreis;
 using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen(options =>
     AssemblyInfo.AssemblyName,
     new OpenApiInfo
     {
-        Title = $"{AssemblyInfo.ProgramNameVersion} manual",
+        Title = $"{AssemblyInfo.AssemblyName}",
     });
 
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{AssemblyInfo.AssemblyName}.xml"), true);
@@ -30,8 +30,9 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDbContext<StorageDbContext>(options =>
 {
     options.UseNpgsql();
-    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
+
+builder.Services.AddSingleton<IStorageRepository, StorageRepository>(); 
 
 var app = builder.Build();
 
@@ -43,39 +44,18 @@ app.UseSwaggerUI(options =>
 });
 app.UseDeveloperExceptionPage();
 
-app.MapPost("/add", async ([Required] StorageRequest? request, StorageDbContext context) =>
+app.MapPost("/add", async ([Required] StorageRequest? request, IStorageRepository repository) =>
 {
-    Guid id = Guid.NewGuid();
-    Item entity = new Item()
-    {
-        Id = id,
-        Tid = request!.Tid,
-        Status = true
-    };
+    Guid id = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6");
 
-    await context.Items.AddAsync(entity);
-    context.SaveChanges();
-
-    return Results.Ok(new { Id = id });
-});
-
-app.MapPost("/cancel", async ([Required] StorageRequest? request, StorageDbContext context) =>
-{
-    var entity = await context.Items.FirstOrDefaultAsync(x => x.Tid == request!.Tid);
-
-    if (entity != null)
-    {
-        entity.Status = false;
-        context.Items.Update(entity);
-        context.SaveChanges();
-    }
+    await repository.AddItem(id, request.Quantity);
 
     return Results.Ok();
 });
 
-app.MapGet("/items", async (StorageDbContext context) =>
+app.MapGet("/items", async (IStorageRepository repository) =>
 {
-    var response = await context.Items.ToArrayAsync();
+    var response = await repository.GetAll();
     return Results.Ok(response);
 });
 

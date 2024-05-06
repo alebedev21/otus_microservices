@@ -4,7 +4,9 @@ using OrdersService.ConfigOptions;
 using OrdersService.Contexts;
 using OrdersService.DTO.Income;
 using OrdersService.Helpers;
+using OrdersService.HostedServices;
 using OrdersService.Repositories;
+using OrdersService.Services;
 using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +19,7 @@ builder.Services.AddSwaggerGen(options =>
     AssemblyInfo.AssemblyName,
     new OpenApiInfo
     {
-        Title = $"{AssemblyInfo.ProgramNameVersion} manual",
+        Title = $"{AssemblyInfo.AssemblyName}",
     });
 
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{AssemblyInfo.AssemblyName}.xml"), true);
@@ -30,11 +32,16 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDbContext<OrdersDbContext>(options =>
 {
     options.UseNpgsql();
-    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 builder.Services.AddSingleton<IBasketItemRepository, BasketItemRepository>();
-builder.Services.AddHostedService<KafkaHostedService>();
+
+builder.Services.AddSingleton<IKafkaPublisherService, KafkaPublisherService>();
+
+builder.Services.AddOptions<CostOptions>().BindConfiguration("CostOptions");
+builder.Services.AddSingleton<IPurchaseService, PurchaseService>();
+
+builder.Services.AddHostedService<KafkaConsumerHostedService>();
 
 var app = builder.Build();
 
@@ -46,15 +53,21 @@ app.UseSwaggerUI(options =>
 });
 app.UseDeveloperExceptionPage();
 
-app.MapPost("/add", async ([Required] BasketItemRequest? request, IBasketItemRepository repository) =>
+app.MapPost("/add", async ([Required] UserIdRequest? request, IBasketItemRepository repository) =>
 {
-    await repository.Add(request!.Userid);
+    await repository.Add(request!.UserId);
     return TypedResults.Ok();
 });
 
-app.MapPost("/remove", async ([Required] BasketItemRequest? request, IBasketItemRepository repository) =>
+app.MapPost("/remove", async ([Required] UserIdRequest? request, IBasketItemRepository repository) =>
 {
-    await repository.Remove(request!.Userid);
+    await repository.Remove(request!.UserId);
+    return TypedResults.Ok();
+});
+
+app.MapPost("/buy", async ([Required] UserIdRequest? request, IPurchaseService service) =>
+{
+    await service.Buy(request!.UserId);
     return TypedResults.Ok();
 });
 

@@ -1,135 +1,84 @@
 ﻿
 using Gateway.ConfigOptions;
-using Gateway.Contexts;
-using Gateway.Entities;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Gateway.DTO.Outcome;
+using Gateway.Repositories;
 
-namespace Gateway.Services
+namespace Gateway.Services;
+
+public class PurchaseService(
+    IHttpClientFactory factory,
+    IOptions<ApiPointsOptions> options,
+    ILogger<PurchaseService> logger) : IPurchaseService
 {
-    public class PurchaseService : IPurchaseService
+    private readonly IHttpClientFactory _factory = factory;
+    private readonly ILogger<PurchaseService> _logger = logger;
+
+    private readonly string _ordersServiceUrl = options.Value.OrdersUrl;
+
+    public async Task<bool> AddItemBasket(Guid userId)
     {
-        private readonly GatewayDbContext _context;
-        private readonly IHttpClientFactory _factory;
+        var request = JsonSerializer.Serialize(new BasketItemRequest(userId));
+        return await Post(_ordersServiceUrl, "add", request);
+    }
 
-        private readonly string _storageServiceUrl;
-        private readonly string _deliveryServiceUrl;
-        private readonly string _paymentServiceUrl;
+    public async Task<int> GetItemsBasket(Guid userId)
+    {
+        return await Get<int>(_ordersServiceUrl, "item", userId);
+    }
 
-        public PurchaseService(GatewayDbContext context, IHttpClientFactory factory, IOptions<ApiPointsOptions> options)
+    public async Task<bool> RemoveItemBasket(Guid userId)
+    {
+        var request = JsonSerializer.Serialize(new BasketItemRequest(userId));
+        return await Post(_ordersServiceUrl, "remove", request);
+    }
+
+    public async Task<bool> Buy(Guid userId)
+    {
+        var request = JsonSerializer.Serialize(new BasketItemRequest(userId));
+        return await Post(_ordersServiceUrl, "buy", request);
+    }
+
+    private async Task<bool> Post(string baseAddress, string serviceUrl, string request)
+    {
+        try
         {
-            _context = context;
-            _factory = factory;
+            var client = _factory.CreateClient();
+            client.BaseAddress = new Uri(baseAddress);
 
-            _storageServiceUrl = options.Value.StorageUrl;
-            _deliveryServiceUrl = options.Value.DeliveryUrl;
-            _paymentServiceUrl = options.Value.PaymentsUrl;
+            var response = await client.PostAsync(serviceUrl, new StringContent(request, Encoding.UTF8, "application/json"));        
+            response.EnsureSuccessStatusCode();
+
+            return true;
         }
-
-        public async Task<bool> Buy()
+        catch (Exception ex)
         {
-            var id = await AddTransaction();
-
-            var storageTask = SendRequest(_storageServiceUrl, "add", id);
-            var deliveryTask = SendRequest(_deliveryServiceUrl, "add", id);
-            var paymentTask = SendRequest(_paymentServiceUrl, "add", id);
-
-            await Task.WhenAll(storageTask, deliveryTask, paymentTask);
-
-            if (storageTask.Result && deliveryTask.Result && paymentTask.Result)
-            {
-                return true;
-            }
-
-            storageTask = SendRequest(_storageServiceUrl, "cancel", id);
-            deliveryTask = SendRequest(_deliveryServiceUrl, "cancel", id);
-            paymentTask = SendRequest(_paymentServiceUrl, "cancel", id);
-
-            await Task.WhenAll(storageTask, deliveryTask, paymentTask, CancelTransaction(id));
-
+            _logger.LogError(ex, "Post error");
             return false;
         }
+    }
 
-        public async Task<bool> BuyError()
+    private async Task<T?> Get<T>(string baseAddress, string serviceUrl, Guid id)
+    {
+        try
         {
-            var id = await AddTransaction();
+            var client = _factory.CreateClient();
+            client.BaseAddress = new Uri(baseAddress);
 
-            var storageTask = SendRequest(_storageServiceUrl, "add", id);
-            var deliveryTask = SendRequestError(_deliveryServiceUrl, "add", id); // error request
-            var paymentTask = SendRequest(_paymentServiceUrl, "add", id);
+            var response = await client.GetAsync($"{serviceUrl}/{id}");
+            response.EnsureSuccessStatusCode();
 
-            await Task.WhenAll(storageTask, deliveryTask, paymentTask);
+            var stream = await response.Content.ReadAsStreamAsync();
+            var userResponse = JsonSerializer.Deserialize<T>(stream);
 
-            if (storageTask.Result && deliveryTask.Result && paymentTask.Result)
-            {
-                return true;
-            }
-
-            storageTask = SendRequest(_storageServiceUrl, "cancel", id);
-            deliveryTask = SendRequest(_deliveryServiceUrl, "cancel", id);
-            paymentTask = SendRequest(_paymentServiceUrl, "cancel", id);
-
-            await Task.WhenAll(storageTask, deliveryTask, paymentTask, CancelTransaction(id));
-
-            return false;
+            return userResponse;
         }
-
-        private async Task<Guid> AddTransaction()
+        catch (Exception ex)
         {
-            Guid id = Guid.NewGuid();
-            DistributedTransaction entity = new()
-            {
-                Id = id,
-                Status = true
-            };
-
-            await _context.Transactions.AddAsync(entity);
-            _context.SaveChanges();
-            _context.ChangeTracker.Clear();
-
-            return id;
-        }
-
-        private async Task CancelTransaction(Guid id)
-        {
-            var entity = await _context.Transactions.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entity != null)
-            {
-                entity.Status = false;
-                _context.Transactions.Update(entity);
-                _context.SaveChanges();
-                _context.ChangeTracker.Clear();
-            }
-        }
-
-        private async Task<bool> SendRequest(string baseAddress, string serviceUrl, Guid tid)
-        {
-            try
-            {
-                var client = _factory.CreateClient();
-                client.BaseAddress = new Uri(baseAddress);
-
-                var request = JsonSerializer.Serialize(new TidRequest(tid));
-                var response = await client.PostAsync(serviceUrl, new StringContent(request, Encoding.UTF8, "application/json"));
-                
-                response.EnsureSuccessStatusCode();
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private async Task<bool> SendRequestError(string baseAddress, string serviceUrl, Guid tid)
-        {
-            await Task.CompletedTask;
-            return false;
-        }
+            _logger.LogError(ex, "Get error");
+            return default;
+        }      
     }
 }

@@ -1,17 +1,13 @@
 using Gateway.Authentication;
 using Gateway.ConfigOptions;
-using Gateway.Contexts;
-using Gateway.DTO.Income;
+using Gateway.Endpoints;
 using Gateway.Helpers;
 using Gateway.Repositories;
 using Gateway.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.ComponentModel.DataAnnotations;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => { options.ListenAnyIP(5168); });
@@ -23,7 +19,7 @@ builder.Services.AddSwaggerGen(options =>
     AssemblyInfo.AssemblyName,
     new OpenApiInfo
     {
-        Title = $"{AssemblyInfo.ProgramNameVersion} manual",
+        Title = $"{AssemblyInfo.AssemblyName}",
     });
 
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{AssemblyInfo.AssemblyName}.xml"), true);
@@ -94,14 +90,6 @@ builder.Services.AddAuthentication(o =>
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddOptions<PostgresOptions>().BindConfiguration("PostgresOptions");
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddDbContext<GatewayDbContext>(options =>
-{
-    options.UseNpgsql();
-    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-});
-
 var app = builder.Build();
 
 app.UseSwagger();
@@ -116,121 +104,8 @@ app.UseDeveloperExceptionPage();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapPost("/register", [AllowAnonymous] async ([Required] RegistrationRequest? request, IAuthService service) =>
-{
-    try
-    {
-        await service.RegisterUser(request!);
-        return Results.Ok();
-    }
-    catch (ArgumentOutOfRangeException)
-    {
-        return Results.Conflict();
-    }
-});
-
-app.MapPost("/login", [AllowAnonymous] async ([Required] RegistrationRequest? request, IAuthService service) =>
-{
-    try
-    {
-        var tokens = await service.LoginUser(request!);
-        return Results.Ok(tokens);
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-    catch (KeyNotFoundException)
-    {
-        return Results.NotFound();
-    }
-});
-
-app.MapPut("/user", [Authorize] async (HttpContext context, UserUpdateRequest request, IUserService service) =>
-{
-    try
-    {
-        var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
-        Guid userId = new Guid(id);
-
-        UserDemoUpdateRequest demoUpdateRequest = request.ToDemoUpdateRequest(userId);
-        await service.Update(demoUpdateRequest);
-
-        return Results.Ok();
-    }
-    catch (ArgumentOutOfRangeException)
-    {
-        return Results.Conflict();
-    }
-});
-
-app.MapGet("/user", [Authorize] async (HttpContext context, IUserService service) =>
-{
-    var claims = context.User.Claims.ToList();
-
-    var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
-    Guid userId = new Guid(id);
-
-    var response = await service.Get(userId);
-    return Results.Ok(response);
-});
-
-app.MapGet("/buy", [AllowAnonymous] async (IPurchaseService service) =>
-{
-    var result = await service.Buy();
-
-    if (result == true)
-    {
-        return Results.Ok();
-    }
-
-    return Results.Conflict();
-});
-
-app.MapGet("/buy-error", [AllowAnonymous] async (IPurchaseService service) =>
-{
-    var result = await service.BuyError();
-
-    if (result == true)
-    {
-        return Results.Ok();
-    }
-
-    return Results.Conflict();
-});
-
-app.MapGet("/transactions", async (GatewayDbContext context) =>
-{
-    var response = await context.Transactions.ToArrayAsync();
-    return Results.Ok(response);
-});
-
-app.MapPost("/put-money", [Authorize] async (HttpContext context, PutMoneyRequest request, IBillingService service) =>
-{
-    var claims = context.User.Claims.ToList();
-
-    var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
-    Guid userId = new Guid(id);
-
-    var result = await service.PutMoney(userId, request.Ammount);
-
-    if (result == true)
-    {
-        return Results.Ok();
-    }
-
-    return Results.Conflict();
-});
-
-app.MapGet("/amount", [Authorize] async (HttpContext context, IBillingService service) =>
-{
-    var claims = context.User.Claims.ToList();
-
-    var id = context.User.Claims.First(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value!;
-    Guid userId = new Guid(id);
-
-    decimal total = await service.GetUserAmount(userId);
-    return Results.Ok(total);
-});
+app.RegisterUserEndpoints();
+app.RegisterBillingEndpoints();
+app.RegisterOrderEndpoints();
 
 app.Run();
