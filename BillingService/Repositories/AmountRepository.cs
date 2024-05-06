@@ -109,7 +109,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
         return amount.AvailableFunds;
     }
 
-    public async Task<bool> LockMoney(Guid userId, decimal some)
+    public async Task<bool> ReserveMoney(Guid userId, decimal some)
     {
         using var scope = _scopeFactory.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
@@ -126,7 +126,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
             }
 
             funds.AvailableFunds -= some;
-            funds.LockedFunds = some;
+            funds.ReservedFunds = some;
             await context.SaveChangesAsync();
 
             transaction.Commit();
@@ -134,7 +134,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"{nameof(LockMoney)}: {ex.Message}");
+            _logger.LogError(ex, $"{nameof(ReserveMoney)}: {ex.Message}");
 
             transaction.Rollback();
             return false;
@@ -157,7 +157,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
                 return false;
             }
 
-            funds.LockedFunds = 0;
+            funds.ReservedFunds = 0;
             await context.SaveChangesAsync();
 
             transaction.Commit();
@@ -188,8 +188,8 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
                 return false;
             }
 
-            funds.AvailableFunds += funds.LockedFunds;
-            funds.LockedFunds = 0;
+            funds.AvailableFunds += funds.ReservedFunds;
+            funds.ReservedFunds = 0;
             await context.SaveChangesAsync();
 
             transaction.Commit();

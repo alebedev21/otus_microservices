@@ -10,6 +10,7 @@ public sealed class StorageDbContext : DbContext
     private readonly string _connectionString;
 
     public DbSet<Item> Items { get; set; } = null!;
+    public DbSet<ReservedItem> ReservedItems { get; set; } = null!;
 
     public StorageDbContext(DbContextOptions<StorageDbContext> options, IOptionsSnapshot<PostgresOptions> postgresOptions) : base(options)
     {
