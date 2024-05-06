@@ -17,13 +17,13 @@ public class StorageItemService(
 
     private readonly string _service = "storage";
 
-    public async Task<bool> PrepareOrder(Guid userId, int quantity)
+    public async Task<bool> PrepareOrder(Guid userId, Guid orderId, int quantity)
     {
         bool isReady = await _repository.ReserveItems(userId, quantity);
 
         if (isReady)
         {
-            if (await GetReady(userId))
+            if (await SendOrderMessage(userId, orderId, _readyTopic))
             {
                 return true;
             }
@@ -32,19 +32,13 @@ public class StorageItemService(
         }
 
         _logger.LogWarning("Insufficient goods");
-        await CancelOrder(userId);
+        await SendOrderMessage(userId, orderId, _cancelOrderTopic);
         return false;
     }
 
-    private async Task<bool> GetReady(Guid userId)
+    private async Task<bool> SendOrderMessage(Guid userId, Guid orderId, string topic)
     {
-        string message = JsonSerializer.Serialize(new { UserId = userId, Service = _service });
-        return await _kafkaService.Publish(_readyTopic, message);
-    }
-
-    private async Task<bool> CancelOrder(Guid userId)
-    {
-        string message = JsonSerializer.Serialize(new { UserId = userId, Service = _service });
-        return await _kafkaService.Publish(_cancelOrderTopic, message);
+        string message = JsonSerializer.Serialize(new { UserId = userId, OrderId = orderId, Service = _service });
+        return await _kafkaService.Publish(topic, message);
     }
 }

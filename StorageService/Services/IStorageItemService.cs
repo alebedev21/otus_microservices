@@ -2,5 +2,5 @@
 
 public interface IStorageItemService
 {
-    Task<bool> PrepareOrder(Guid userId, int quantity);
+    Task<bool> PrepareOrder(Guid userId, Guid orderId, int quantity);
 }

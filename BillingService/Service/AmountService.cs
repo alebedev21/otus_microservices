@@ -15,13 +15,13 @@ public class AmountService(IKafkaService kafkaService, ILogger<AmountService> lo
 
     private readonly string _service = "billing";
 
-    public async Task<bool> PrepareOrder(Guid userId, decimal funds)
+    public async Task<bool> PrepareOrder(Guid userId, Guid orderId, decimal funds)
     {
         bool isReady = await _repository.ReserveMoney(userId, funds);
 
         if (isReady)
         {
-            if(await GetReady(userId))
+            if(await SendOrderMessage(userId, orderId, _readyTopic))
             {
                 return true;
             }
@@ -30,19 +30,12 @@ public class AmountService(IKafkaService kafkaService, ILogger<AmountService> lo
         }
 
         _logger.LogWarning("Insufficient funds");
-        await CancelOrder(userId);
+        await SendOrderMessage(userId, orderId, _cancelOrderTopic);
         return false;
     }
-
-    private async Task<bool> GetReady(Guid userId)
+    private async Task<bool> SendOrderMessage(Guid userId, Guid orderId, string topic)
     {
-        string message = JsonSerializer.Serialize(new { UserId = userId, Service = _service });
-        return await _kafkaService.Publish(_readyTopic, message);
-    }
-
-    private async Task<bool> CancelOrder(Guid userId)
-    {
-        string message = JsonSerializer.Serialize(new { UserId = userId, Service = _service });
-        return await _kafkaService.Publish(_cancelOrderTopic, message);
+        string message = JsonSerializer.Serialize(new { UserId = userId, OrderId = orderId, Service = _service });
+        return await _kafkaService.Publish(topic, message);
     }
 }

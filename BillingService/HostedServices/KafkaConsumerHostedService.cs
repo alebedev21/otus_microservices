@@ -84,7 +84,7 @@ public class KafkaConsumerHostedService : IHostedService
                             {
                                 _logger.LogInformation($"{consumeResult.Message.Value}");
                                 PrepareOrderRequest request = JsonSerializer.Deserialize<PrepareOrderRequest>(consumeResult.Message.Value);
-                                await PrepareOrder(request.UserId, request.FullCost);
+                                await PrepareOrder(request.UserId, request.OrderId, request.FullCost);
                             }
 
                             await Task.Delay(100, cancellationToken);
@@ -311,8 +311,8 @@ public class KafkaConsumerHostedService : IHostedService
         await _amountRepository.ReturnMoney(userId);
     }
 
-    private async Task PrepareOrder(Guid userId, decimal funds)
+    private async Task PrepareOrder(Guid userId, Guid orderId, decimal funds)
     {
-        await _amountService.PrepareOrder(userId, funds);
+        await _amountService.PrepareOrder(userId, orderId, funds);
     }
 }
