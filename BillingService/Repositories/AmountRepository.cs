@@ -12,7 +12,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
     public async Task<bool> CreateAccount(Guid userId)
     {
         using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+        using var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         try
         {
@@ -44,7 +44,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
     public async Task<bool> PutMoney(Guid userId, decimal some)
     {
         using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+        using var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         try
         {
@@ -71,7 +71,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
     public async Task<bool> WriteOutMoney(Guid userId, decimal some)
     {
         using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+        using var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         try
         {
@@ -98,7 +98,7 @@ public class AmountRepository(ILogger<AmountRepository> logger, IServiceScopeFac
     public async Task<decimal> GetUserAmount(Guid userId)
     {
         using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+        using var context = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         var amount = await context.Amounts.FirstOrDefaultAsync(a => a.UserId == userId);
         if (amount == null)

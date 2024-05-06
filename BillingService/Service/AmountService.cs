@@ -33,6 +33,7 @@ public class AmountService(IKafkaService kafkaService, ILogger<AmountService> lo
         await SendOrderMessage(userId, orderId, _cancelOrderTopic);
         return false;
     }
+
     private async Task<bool> SendOrderMessage(Guid userId, Guid orderId, string topic)
     {
         string message = JsonSerializer.Serialize(new { UserId = userId, OrderId = orderId, Service = _service });

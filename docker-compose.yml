@@ -184,6 +184,23 @@ services:
      - postgres
      - init-kafka
 
+  notification:
+    container_name: 'notification'
+    image: 'f210/notification:v20'
+    environment:
+      DB_NOTIFICATION_USER: "postgres"
+      DB_NOTIFICATION_PASSWORD: "123465"
+      PostgresOptions__Host: "postgres"
+      PostgresOptions__Database: "ordersdb3"
+    build:
+      context: ./NotificationService
+      dockerfile: Dockerfile
+    ports:
+     - "5075:5075"
+    depends_on:
+     - postgres
+     - init-kafka
+
   gateway:
     container_name: 'gateway'
     image: 'f210/gateway:v20'
