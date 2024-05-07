@@ -46,7 +46,7 @@ app.UseDeveloperExceptionPage();
 
 app.MapGet("/notifications", async (NotificationDbContext context) =>
 {
-    var response = await context.Notifications.ToArrayAsync();
+    var response = await context.Notifications.OrderByDescending(x => x.CreatedAt).ToArrayAsync();
     return Results.Ok(response);
 });
 

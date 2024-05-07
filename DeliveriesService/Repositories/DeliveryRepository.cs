@@ -27,23 +27,35 @@ public class DeliveryRepository(ILogger<DeliveryRepository> logger, IServiceScop
             {
                 delivery = new()
                 {
-                    Id = Guid.NewGuid(),
                     UserId = userId,
                     OrderId = orderId,
-                    IsBillingOk = (_billingService == service),
-                    IsStorageOk = (_storageService == service),
                 };
+
+                if(service == _billingService)
+                {
+                    delivery.IsBillingOk = true;
+                }
+                else if(service == _storageService)
+                {
+                    delivery.IsStorageOk = true;
+                }
 
                 await context.Deliveries.AddAsync(delivery);
                 await context.SaveChangesAsync();
                 transaction.Commit();
-                
+
+                _logger.LogInformation("Only one entry exists yet");
                 return false;
             }
 
             //already cancelled
-            if (!delivery.IsStorageOk || !delivery.IsBillingOk)
+            bool isCancelledByBilling = (delivery.IsBillingOk is not null) && (delivery.IsBillingOk == false);
+            bool isCancelledByStorage = (delivery.IsStorageOk is not null) && (delivery.IsStorageOk == false);
+
+
+            if (isCancelledByBilling || isCancelledByStorage)
             {
+                _logger.LogInformation("Order is already cancelled");
                 transaction.Rollback();
                 return false;
             }
@@ -60,7 +72,8 @@ public class DeliveryRepository(ILogger<DeliveryRepository> logger, IServiceScop
 
             await context.SaveChangesAsync();
             transaction.Commit();
-            
+
+            _logger.LogInformation("Can sent order completed message");
             return true;
 
         }
@@ -88,12 +101,18 @@ public class DeliveryRepository(ILogger<DeliveryRepository> logger, IServiceScop
             {
                 delivery = new()
                 {
-                    Id = Guid.NewGuid(),
                     UserId = userId,
                     OrderId = orderId,
-                    IsBillingOk = (_billingService == service),
-                    IsStorageOk = (_storageService == service),
                 };
+
+                if (service == _billingService)
+                {
+                    delivery.IsBillingOk = false;
+                }
+                else if (service == _storageService)
+                {
+                    delivery.IsStorageOk = false;
+                }
 
                 await context.Deliveries.AddAsync(delivery);
                 await context.SaveChangesAsync();
@@ -104,7 +123,11 @@ public class DeliveryRepository(ILogger<DeliveryRepository> logger, IServiceScop
             }
 
             //already cancelled
-            if (!delivery.IsStorageOk || !delivery.IsBillingOk)
+            bool isCancelledByBilling = (delivery.IsBillingOk is not null) && (delivery.IsBillingOk == false);
+            bool isCancelledByStorage = (delivery.IsStorageOk is not null) && (delivery.IsStorageOk == false);
+
+
+            if (isCancelledByBilling || isCancelledByStorage)
             {
                 transaction.Rollback();
                 return false;

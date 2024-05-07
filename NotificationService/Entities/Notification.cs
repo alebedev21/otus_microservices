@@ -2,7 +2,7 @@
 
 namespace NotificationService.Entities;
 
-[PrimaryKey(nameof(UserId))]
+[PrimaryKey(nameof(OrderId))]
 public class Notification
 {
     public Guid Id { get; set; }
@@ -10,4 +10,5 @@ public class Notification
     public Guid UserId { get; set; }
     public bool IsOrderCancelled { get; set; }
     public bool IsOrderCompleted { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

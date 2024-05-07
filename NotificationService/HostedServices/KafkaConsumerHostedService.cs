@@ -10,8 +10,8 @@ public class KafkaConsumerHostedService : IHostedService
 {
     private readonly ConsumerConfig _config;
 
-    private readonly string _orderCancelledTopic = "order-cancelled";
-    private readonly string _orderCompletedTopic = "order-compleated";
+    private readonly string _cancelOrderTopic = "cancel-order";
+    private readonly string _orderCompletedTopic = "order-completed";
 
     private readonly ILogger<KafkaConsumerHostedService> _logger;
     private readonly INotificationRepository _repository;
@@ -38,7 +38,7 @@ public class KafkaConsumerHostedService : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        Task.Run(() => ConsumeOrderCancelledTopik(cancellationToken));
+        Task.Run(() => ConsumeCancelOrderTopik(cancellationToken));
         Task.Run(() => ConsumeOrderCompletedTopik(cancellationToken));
 
         _logger.LogInformation($"{nameof(KafkaConsumerHostedService)} started");
@@ -51,9 +51,9 @@ public class KafkaConsumerHostedService : IHostedService
         await Task.CompletedTask;
     }
 
-    private async Task ConsumeOrderCancelledTopik(CancellationToken cancellationToken)
+    private async Task ConsumeCancelOrderTopik(CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"Starting consume {_orderCancelledTopic}");
+        _logger.LogInformation($"Starting consume {_cancelOrderTopic}");
 
         while (!_canceled || !cancellationToken.IsCancellationRequested)
         {
@@ -61,8 +61,8 @@ public class KafkaConsumerHostedService : IHostedService
             {
                 using (var consumer = new ConsumerBuilder<Ignore, string>(_config).Build())
                 {
-                    consumer.Subscribe(_orderCancelledTopic);
-                    _logger.LogInformation($"Topic {_orderCancelledTopic} subscribed");
+                    consumer.Subscribe(_cancelOrderTopic);
+                    _logger.LogInformation($"Topic {_cancelOrderTopic} subscribed");
 
                     while (!_canceled || !cancellationToken.IsCancellationRequested)
                     {
@@ -81,7 +81,7 @@ public class KafkaConsumerHostedService : IHostedService
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, $"Consuming {_orderCancelledTopic} error");
+                            _logger.LogError(ex, $"Consuming {_cancelOrderTopic} error");
                             await Task.Delay(100, cancellationToken);
                         }
                     }
@@ -91,7 +91,7 @@ public class KafkaConsumerHostedService : IHostedService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Subscribing {_orderCancelledTopic} error");
+                _logger.LogError(ex, $"Subscribing {_cancelOrderTopic} error");
                 await Task.Delay(3000, cancellationToken);
             }
         }

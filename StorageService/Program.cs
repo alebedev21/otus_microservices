@@ -50,11 +50,11 @@ app.UseSwaggerUI(options =>
 });
 app.UseDeveloperExceptionPage();
 
-app.MapPost("/add", async ([Required] StorageRequest? request, IStorageRepository repository) =>
+app.MapPost("/set", async ([Required] StorageRequest? request, IStorageRepository repository) =>
 {
 
 
-    await repository.AddItem(request.Quantity);
+    await repository.SetQuantity(request.Quantity);
 
     return Results.Ok();
 });

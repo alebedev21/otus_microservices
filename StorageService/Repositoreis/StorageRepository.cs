@@ -11,7 +11,7 @@ public class StorageRepository(ILogger<StorageRepository> logger, IServiceScopeF
     private readonly Guid _id = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6");
 
 
-    public async Task<bool> AddItem(int quantity)
+    public async Task<bool> SetQuantity(int quantity)
     {
         using var scope = _scopeFactory.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<StorageDbContext>();
@@ -35,7 +35,7 @@ public class StorageRepository(ILogger<StorageRepository> logger, IServiceScopeF
             }
 
             var count = await context.Items.Where(x => x.Id == _id)
-                .ExecuteUpdateAsync(x => x.SetProperty(y => y.Quantity, y => y.Quantity + quantity));
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.Quantity, y => quantity));
 
             return (count > 0);
         }

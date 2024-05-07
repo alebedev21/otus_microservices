@@ -26,15 +26,18 @@ public class NotificationRepository(ILogger<NotificationRepository> logger, ISer
                     UserId = userId,
                     OrderId = orderId,
                     IsOrderCancelled = true,
-                    IsOrderCompleted = false
+                    IsOrderCompleted = false,
+                    CreatedAt = DateTime.UtcNow,
                 };
 
                 await context.Notifications.AddAsync(note);
                 await context.SaveChangesAsync();
 
+                _logger.LogInformation($"Order {orderId} cancelled");
                 return true;
             }
 
+            _logger.LogInformation($"Order {orderId} has already been cancelled");
             return false;
         }
         catch (Exception ex)
@@ -61,15 +64,18 @@ public class NotificationRepository(ILogger<NotificationRepository> logger, ISer
                     UserId = userId,
                     OrderId = orderId,
                     IsOrderCancelled = false,
-                    IsOrderCompleted = true
+                    IsOrderCompleted = true,
+                    CreatedAt = DateTime.UtcNow,
                 };
 
                 await context.Notifications.AddAsync(note);
                 await context.SaveChangesAsync();
 
+                _logger.LogInformation($"Order {orderId} completed");
                 return true;
             }
 
+            _logger.LogInformation($"Order {orderId} has been alresdy completed");
             return false;
         }
         catch (Exception ex)
