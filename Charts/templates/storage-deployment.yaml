@@ -20,14 +20,16 @@ spec:
       containers:
       - name: storage
         image: {{ .Values.container.storageImage }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5072
         env:
+        - name: KafkaBootstrap
+          value: kafka.kafka-ca1:9092
         - name: PostgresOptions__Host
           value: pg-minikube-postgresql.default.svc.cluster.local
         - name: PostgresOptions__Database
-          value: storagedb10
+          value: storagedb20
         - name: DB_STORAGE_USER
           valueFrom:
             secretKeyRef:

@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payments-deployment
+  name: users-deployment
   labels:
-    app: payments-deployment
+    app: users-deployment
 spec:
   replicas: {{ .Values.replicaCount }}
   minReadySeconds: 10
@@ -11,29 +11,31 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: payments
+      app: users
   template:
     metadata:
       labels:
-        app: payments
+        app: users
     spec:
       containers:
-      - name: payments
-        image: {{ .Values.container.paymentsImage }}
-        imagePullPolicy: Always
+      - name: users
+        image: {{ .Values.container.usersImage }}
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5071
+        - containerPort: 8080
         env:
+        - name: KafkaBootstrap
+          value: kafka.kafka-ca1:9092
         - name: PostgresOptions__Host
           value: pg-minikube-postgresql.default.svc.cluster.local
         - name: PostgresOptions__Database
-          value: paymentsdb10
-        - name: DB_PAYMENTS_USER
+          value: usersdb20
+        - name: DB_USER
           valueFrom:
             secretKeyRef:
               name: demo-secret
               key: dbUser
-        - name: DB_PAYMENTS_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: demo-secret

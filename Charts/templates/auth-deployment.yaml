@@ -20,14 +20,14 @@ spec:
       containers:
       - name: auth
         image: {{ .Values.container.authImage }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5068
         env:
         - name: PostgresOptions__Host
           value: pg-minikube-postgresql.default.svc.cluster.local
         - name: PostgresOptions__Database
-          value: authdb10
+          value: authdb20
         - name: DB_AUTH_USER
           valueFrom:
             secretKeyRef:
